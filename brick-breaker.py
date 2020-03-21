@@ -10,9 +10,8 @@ class ball:
         self.x = 250
         self.y = 250
         self.radius = 10
-        self.vector = self.convertToUnit([1, 4])
-        self.vector[0] = int(self.vector[0] * 5)
-        self.vector[1] = int(self.vector[1] * 5)
+        self.vector = [1, 4]
+        self.convertToGameVector(self.vector)
         self.score = 0
 
     def move(self, bouncer, bricks):
@@ -29,9 +28,15 @@ class ball:
             self.vector[0] *= -1
         elif self.y + changeY + self.radius >= 485 and \
             (self.x + changeX + self.radius >= bouncer.left and self.x + changeX - self.radius <= bouncer.right): # bouncer collision
+            distanceFromBouncerCenter = self.x - bouncer.center[0]
+            angleAdjustment = distanceFromBouncerCenter // 10
             self.y = 485 - self.radius
             changeY = 0
+            self.vector[0] += angleAdjustment
             self.vector[1] *= -1
+            self.convertToGameVector(self.vector)
+            print("Distance from center: ", distanceFromBouncerCenter)
+            print("Angle adjustment: ", angleAdjustment)
         elif self.y + changeY - self.radius < 0: # upper wall collision
             self.y = self.radius
             changeY = 0
@@ -39,26 +44,29 @@ class ball:
         elif self.y - self.radius > 500:
             gameOver(self.score, False)
         else: # brick collision
+            collided = False
             for brickComplex in bricks:
                 brick = brickComplex[0]
                 if self.y + changeY - self.radius <= brick.bottom and self.y + changeY + self.radius >= brick.top and \
                     (self.x + changeX + self.radius >= brick.left and self.x + changeX - self.radius <= brick.right):
-                    if self.y - self.radius > brick.bottom: # bottom collision
-                        self.y = brick.bottom + self.radius
-                        changeY = 0
-                        self.vector[1] *= -1
-                    elif self.y + self.radius < brick.top: # top collision
-                        self.y = brick.top - self.radius
-                        changeY = 0
-                        self.vector[1] *= -1
-                    elif self.x + self.radius < brick.left: # left side collision
-                        self.x = brick.left - self.radius
-                        changeX = 0
-                        self.vector[0] *= -1
-                    else: # right side collision
-                        self.x = brick.right + self.radius
-                        changeX = 0
-                        self.vector[0] *= -1
+                    if not collided:
+                        if self.y - self.radius > brick.bottom: # bottom collision
+                            self.y = brick.bottom + self.radius
+                            changeY = 0
+                            self.vector[1] *= -1
+                        elif self.y + self.radius < brick.top: # top collision
+                            self.y = brick.top - self.radius
+                            changeY = 0
+                            self.vector[1] *= -1
+                        elif self.x + self.radius < brick.left: # left side collision
+                            self.x = brick.left - self.radius
+                            changeX = 0
+                            self.vector[0] *= -1
+                        else: # right side collision
+                            self.x = brick.right + self.radius
+                            changeX = 0
+                            self.vector[0] *= -1
+                        collided = True
                     
                     bricks.remove(brickComplex)
                     self.score += 1
@@ -66,14 +74,27 @@ class ball:
                     
                     if len(bricks) == 0:
                         gameOver(self.score, True)
-                    break
 
         self.x += changeX
         self.y += changeY
 
+        print("X vector: ", self.vector[0])
+        print("Y vector: ", self.vector[1])
+
     def convertToUnit(self, vector):
         mag = math.sqrt(vector[0] ** 2 + vector[1] ** 2)
-        return [vector[0] / mag, vector[1] / mag]
+        vector[0] /= mag
+        vector[1] /= mag
+
+    def convertToGameVector(self, vector):
+        self.convertToUnit(vector)
+        self.vector[0] = int(vector[0] * 5)
+        self.vector[1] = int(vector[1] * 5)
+        if self.vector[1] == -1:
+            self.vector[1] -= 1
+            self.convertToUnit(self.vector)
+            self.vector[0] = int(vector[0] * 5)
+            self.vector[1] = int(vector[1] * 5)
 
 windowWidth = 500
 windowHeight = windowWidth
